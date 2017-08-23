@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:email="http://www.mulesoft.org/schema/mule/email"
+<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:email="http://www.mulesoft.org/schema/mule/email"
 	xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
 	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
 	xmlns:slack="http://www.mulesoft.org/schema/mule/slack" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
@@ -21,7 +21,8 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
 http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
-http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/mule/objectstore/current/mule-objectstore.xsd">
+http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/mule/objectstore/current/mule-objectstore.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
 	<http:listener-config name="httpListenerConfig"
 		host="0.0.0.0" port="${http.port}" doc:name="HTTP Listener Configuration" />
 	<apikit:config name="apiConfig" raml="api.raml"
@@ -47,6 +48,7 @@ http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/m
 		doc:name="HTTP Request Configuration" />
 	<objectstore:config name="ObjectStore__Configuration" doc:name="ObjectStore: Configuration" objectStore-ref="_defaultUserObjectStore"
 		persistent="true" entryTtl="0" expirationInterval="0" maxEntries="0" />
+    <vm:connector name="VM" validateConnections="true" doc:name="VM"/>
 
 	<flow name="api-main">
 		<http:listener config-ref="httpListenerConfig" path="/api/*"
@@ -143,17 +145,25 @@ payload
 			message="Testing" accessTokenId="wCq1k1zhp1G2plDDWcXXilCK" doc:name="Slack"/> -->
 
 	</flow>
+    <flow name="sendEmail">
+        <vm:inbound-endpoint exchange-pattern="one-way" path="email" connector-ref="VM" doc:name="VM"/>
+        <set-property propertyName="#[&quot;subject&quot;]" value="#[&quot;[API Monitor]&quot;] #[payload.name] #[&quot; is down &quot;]" doc:name="setEmailSubject"/>
+        <set-property propertyName="#[&quot;body&quot;]" value="#[payload]" mimeType="text/html" doc:name="setEmailBody"/>
+        <enricher doc:name="Send Notification Email">
+            <smtp:outbound-endpoint host="${smtp.host}" port="${smtp.port}" user="${smtp.user}" password="${smtp.password}" connector-ref="SMTP" to="${smtp.to}" from="${smtp.from}" subject="API Monitor" cc="${smtp.cc}" bcc="${smtp.bcc}" responseTimeout="10000" mimeType="text/html" doc:name="SMTP">
+                <property key="mail.smtp.starttls.enable" value="true"/>
+            </smtp:outbound-endpoint>
+            <enrich source="" target="#[flowVars['smptResponse']]"/>
+        </enricher>
+    </flow>
     <sub-flow name="sendNotificaiton">
         <choice doc:name="Choice">
             <when expression="#[flowVars.isUp == false]">
-                <set-property propertyName="#[&quot;subject&quot;]" value="#[&quot;[API Monitor]&quot;] #[payload.name] #[&quot; is down &quot;]" doc:name="setEmailSubject"/>
-                <set-property propertyName="#[&quot;body&quot;]" value="#[payload]" mimeType="text/html" doc:name="setEmailBody"/>
-                <enricher doc:name="Send Notification Email">
-                    <smtp:outbound-endpoint host="${smtp.host}" port="${smtp.port}" user="${smtp.user)" password="${smtp.password)" connector-ref="SMTP" to="${smtp.to}" from="${smtp.from}" subject="API Monitor" cc="${smtp.cc}" responseTimeout="10000" mimeType="text/html" doc:name="SMTP" bcc="${smtp.bcc}">
-                        <property key="mail.smtp.starttls.enable" value="true"/>
-                    </smtp:outbound-endpoint>
-                    <enrich source="" target="#[flowVars['smptResponse']]"/>
+                <enricher doc:name="Message Enricher">
+                    <vm:outbound-endpoint exchange-pattern="one-way" path="email" connector-ref="VM" doc:name="VM"/>
+                    <enrich source="" target="#[flowVars['email']]"/>
                 </enricher>
+
             </when>
             <otherwise>
                 <logger message="The Folloing site is Up : #[payload]" level="INFO" doc:name="Logger"/>

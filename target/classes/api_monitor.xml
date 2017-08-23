@@ -157,7 +157,7 @@ payload
         </enricher>
     </flow>
     <sub-flow name="sendNotificaiton">
-        <choice doc:name="Choice">
+        <choice doc:name="isUp">
             <when expression="#[flowVars.isUp == false]">
                 <enricher doc:name="Message Enricher">
                     <vm:outbound-endpoint exchange-pattern="one-way" path="email" connector-ref="VM" doc:name="VM"/>
@@ -197,12 +197,21 @@ return isIntervalExpired]]></scripting:script>
             </scripting:component>
             <enrich source="" target="#[flowVars['isIntervalExpired']]"/>
         </enricher>
-        <choice tracking:enable-default-events="true" doc:name="Choice">
+        <choice tracking:enable-default-events="true" doc:name="isIntervalExpired">
             <when expression="#[flowVars.isIntervalExpired]">
                 <flow-ref name="sendNotificaiton" doc:name="sendNotificaiton"/>
             </when>
             <otherwise>
                 <logger message="Interval Has not Epired No notificaitons would be sent for #[payload]" level="INFO" doc:name="Logger"/>
+                <scripting:component doc:name="Update Payload to Previous Time Stamp">
+                    <scripting:script engine="Groovy"><![CDATA[try{
+  def lastPingPayload = flowVars['previousPingResult'].get(payload.name)
+  payload.put("timeStamp", lastPingPayload.timeStamp)
+}catch(Exception ex){
+   ex.printStackTrace()
+}
+return payload]]></scripting:script>
+                </scripting:component>
             </otherwise>
         </choice>
     </sub-flow>
