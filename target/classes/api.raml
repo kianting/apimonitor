@@ -1,0 +1,52 @@
+#%RAML 1.0
+title: API Monitor
+mediaType: application/json
+types:
+  Endpoint:
+    properties:
+      name:
+        description: Name of the enpoint to ping
+        type: string
+        required: true
+      host:
+        description: Host name of the endpoint, FQDN
+        type: string
+        required: false
+      ip:
+        description: ip address of the host
+        type: string
+        required: false
+      port:
+        description: port of the host to ping
+        type: number
+        required: false
+      url:
+        description: url of the site to ping
+        type: string
+        required: false
+      desc:
+        description: futher description to be inclueded in coomunicaitons when host is down
+        type: string
+        required: false
+      notificaitonInterval:
+        type: NotificaitonInterval
+        required: true
+  NotificaitonInterval:
+    properties:    
+      hour:
+        type: number
+        required: true
+      minutes:
+        type: number
+        required: true
+      seconds:
+        type: number
+        required: true
+/ping:
+  post:
+    body:
+      type: Endpoint[]
+    responses:
+      200:
+        body:
+          application/json:
