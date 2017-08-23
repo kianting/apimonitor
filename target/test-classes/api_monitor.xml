@@ -101,7 +101,8 @@ return isUp;]]></scripting:script>
 		</enricher>
 		<scripting:component doc:name="Append New Data to Payload">
 			<scripting:script engine="Groovy"><![CDATA[payload.put("isUp", flowVars.isUp)
-payload.put("timeStamp", (new Date()))
+payload.put("notification_timeStamp", (new Date()))
+payload.put("ping_timestamp", (new Date()))
 return payload]]></scripting:script>
 		</scripting:component>
         <choice tracking:enable-default-events="true" doc:name="Was there a previous ping attempt">
@@ -157,7 +158,7 @@ payload
         </enricher>
     </flow>
     <sub-flow name="sendNotificaiton">
-        <choice doc:name="Choice">
+        <choice doc:name="isUp">
             <when expression="#[flowVars.isUp == false]">
                 <enricher doc:name="Message Enricher">
                     <vm:outbound-endpoint exchange-pattern="one-way" path="email" connector-ref="VM" doc:name="VM"/>
@@ -181,7 +182,7 @@ try{
    def elapsedTime = 0
 
    use(groovy.time.TimeCategory) {
-       def duration = (new Date()) - lastPingPayload.timeStamp
+       def duration = (new Date()) - lastPingPayload.notification_timeStamp
        elapsedTime = (duration.days * 24 * 60 * 60) + (duration.hours * 60 * 60) + (duration.minutes * 60) + duration.seconds
    }
    
@@ -197,12 +198,21 @@ return isIntervalExpired]]></scripting:script>
             </scripting:component>
             <enrich source="" target="#[flowVars['isIntervalExpired']]"/>
         </enricher>
-        <choice tracking:enable-default-events="true" doc:name="Choice">
+        <choice tracking:enable-default-events="true" doc:name="isIntervalExpired">
             <when expression="#[flowVars.isIntervalExpired]">
                 <flow-ref name="sendNotificaiton" doc:name="sendNotificaiton"/>
             </when>
             <otherwise>
                 <logger message="Interval Has not Epired No notificaitons would be sent for #[payload]" level="INFO" doc:name="Logger"/>
+                <scripting:component doc:name="Update Payload to Previous Time Stamp">
+                    <scripting:script engine="Groovy"><![CDATA[try{
+  def lastPingPayload = flowVars['previousPingResult'].get(payload.name)
+  payload.put("notification_timeStamp", lastPingPayload.notification_timeStamp)
+}catch(Exception ex){
+   ex.printStackTrace()
+}
+return payload]]></scripting:script>
+                </scripting:component>
             </otherwise>
         </choice>
     </sub-flow>
