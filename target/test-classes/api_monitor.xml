@@ -99,7 +99,7 @@ return isUp;]]></scripting:script>
 		</enricher>
 		<scripting:component doc:name="Append New Data to Payload">
 			<scripting:script engine="Groovy"><![CDATA[payload.put("isUp", flowVars.isUp)
-payload.put("timeStamp", (new Date()).toString())
+payload.put("timeStamp", (new Date()))
 return payload]]></scripting:script>
 		</scripting:component>
         <choice tracking:enable-default-events="true" doc:name="Was there a previous ping attempt">
@@ -122,7 +122,7 @@ for(int i=0; i < payload.size(); i++)
    objectStoreStuct.put(payload[i].name,payload[i])
 }
 
-return new java.util.HashMap(objectStoreStuct)]]></scripting:script>
+return objectStoreStuct]]></scripting:script>
             </scripting:component>
             <enrich source="" target="#[flowVars['newPingResult']]"/>
         </enricher>
@@ -149,7 +149,7 @@ payload
                 <set-property propertyName="#[&quot;subject&quot;]" value="#[&quot;[API Monitor]&quot;] #[payload.name] #[&quot; is down &quot;]" doc:name="setEmailSubject"/>
                 <set-property propertyName="#[&quot;body&quot;]" value="#[payload]" mimeType="text/html" doc:name="setEmailBody"/>
                 <enricher doc:name="Send Notification Email">
-                    <smtp:outbound-endpoint host="smtp-mail.outlook.com" port="587" user="rammsappworkorder@outlook.com" password="mulesoft2017#" connector-ref="SMTP" to="kian.ting@outlook.com, Jason.Wu@ccc.govt.nz" from="rammsappworkorder@outlook.com" subject="API Monitor" cc="kian.ting@ccc.govt.nz" responseTimeout="10000" mimeType="text/html" doc:name="SMTP">
+                    <smtp:outbound-endpoint host="${smtp.host}" port="${smtp.port}" user="${smtp.user)" password="${smtp.password)" connector-ref="SMTP" to="${smtp.to}" from="${smtp.from}" subject="API Monitor" cc="${smtp.cc}" responseTimeout="10000" mimeType="text/html" doc:name="SMTP" bcc="${smtp.bcc}">
                         <property key="mail.smtp.starttls.enable" value="true"/>
                     </smtp:outbound-endpoint>
                     <enrich source="" target="#[flowVars['smptResponse']]"/>
