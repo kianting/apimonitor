@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mock="http://www.mulesoft.org/schema/mule/mock" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd">
+    <munit:config name="munit" doc:name="MUnit configuration" mock-connectors="false" mock-inbounds="false"/>
+    <spring:beans>
+        <spring:import resource="classpath:api_monitor.xml"/>
+    </spring:beans>
+    <munit:test name="api_monitor-test-suite-post:/ping:application/json:apiConfigTest" description="Test" doc:description="ST prefix stands for service test">
+        <mock:when messageProcessor=".*:.*" doc:name="Mock Retrieve lastPing">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Retrieve lastPing']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[&quot;EMPTY&quot;]"/>
+        </mock:when>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock Ping the URL">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Ping The URL']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[true]"/>
+        </mock:when>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock SendEmail VM">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['sendEmail']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[payload]"/>
+        </mock:when>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock Store New Ping">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Store New Ping']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[&quot;EMPTY&quot;]"/>
+        </mock:when>
+        <munit:set payload="#[getResource(&quot;input/ST001-T001-InputPayload.json&quot;).asString()]" doc:name="Set Message"/>
+        <flow-ref name="post:/ping:application/json:apiConfig" doc:name="Flow-ref to post:/ping:application/json:apiConfig"/>
+        <munit:assert-not-null doc:name="Assert Not Null Payload"/>
+    </munit:test>
+</mule>

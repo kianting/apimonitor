@@ -1,0 +1,20 @@
+[
+{  "name" : "Git Hub",
+   "url": "https://github.com",
+   "notificaitonInterval" : 
+   {
+      "hour":0,
+      "minutes": 0,
+      "seconds": 60
+   }
+},
+{  "name" : "Google website",
+   "url": "http://www.gwiggle.com",
+   "notificaitonInterval" : 
+   {
+      "hour":0,
+      "minutes": 0,
+      "seconds": 60
+   }
+}
+]
