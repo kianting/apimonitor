@@ -8,7 +8,7 @@ http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/moc
     <spring:beans>
         <spring:import resource="classpath:api_monitor.xml"/>
     </spring:beans>
-    <munit:test name="api_monitor-test-suite-post:/ping:application/json:apiConfigTest" description="Test" doc:description="ST prefix stands for service test">
+    <munit:test name="ST001-T001-api_monitor-test-suite-post:/ping:application/json:apiConfigTest" description="Test" doc:description="ST prefix stands for service test">
         <mock:when messageProcessor=".*:.*" doc:name="Mock Retrieve lastPing">
             <mock:with-attributes>
                 <mock:with-attribute name="doc:name" whereValue="#['Retrieve lastPing']"/>
