@@ -99,7 +99,7 @@ return isUp;]]></scripting:script>
 		</enricher>
 		<scripting:component doc:name="Append New Data to Payload">
 			<scripting:script engine="Groovy"><![CDATA[payload.put("isUp", flowVars.isUp)
-payload.put("timeStamp", (new Date()).toString())
+payload.put("timeStamp", (new Date()))
 return payload]]></scripting:script>
 		</scripting:component>
         <choice tracking:enable-default-events="true" doc:name="Was there a previous ping attempt">
