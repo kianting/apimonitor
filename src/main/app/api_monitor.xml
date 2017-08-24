@@ -148,10 +148,10 @@ payload
 	</flow>
     <flow name="sendEmail">
         <vm:inbound-endpoint exchange-pattern="one-way" path="email" connector-ref="VM" doc:name="VM"/>
-        <set-property propertyName="#[&quot;subject&quot;]" value="#[&quot;[API Monitor]&quot;] #[payload.name] #[&quot; is down &quot;]" doc:name="setEmailSubject"/>
+        <set-property propertyName="#[&quot;subject&quot;]" value="${smtp.subjectPrefix} #[payload.name] #[&quot; is down &quot;]" doc:name="setEmailSubject"/>
         <set-property propertyName="#[&quot;body&quot;]" value="#[payload]" mimeType="text/html" doc:name="setEmailBody"/>
         <enricher doc:name="Send Notification Email">
-            <smtp:outbound-endpoint host="${smtp.host}" port="${smtp.port}" user="${smtp.user}" password="${smtp.password}" connector-ref="SMTP" to="${smtp.to}" from="${smtp.from}" subject="API Monitor" cc="${smtp.cc}" bcc="${smtp.bcc}" responseTimeout="10000" mimeType="text/html" doc:name="SMTP">
+            <smtp:outbound-endpoint host="${smtp.host}" port="${smtp.port}" user="${smtp.user}" password="${smtp.password}" connector-ref="SMTP" to="${smtp.to}" from="${smtp.from}" subject="${smtp.subjectPrefix}" cc="${smtp.cc}" bcc="${smtp.bcc}" responseTimeout="10000" mimeType="text/html" doc:name="SMTP">
                 <property key="mail.smtp.starttls.enable" value="true"/>
             </smtp:outbound-endpoint>
             <enrich source="" target="#[flowVars['smptResponse']]"/>
@@ -199,21 +199,29 @@ return isIntervalExpired]]></scripting:script>
             <enrich source="" target="#[flowVars['isIntervalExpired']]"/>
         </enricher>
         <choice tracking:enable-default-events="true" doc:name="isIntervalExpired">
-            <when expression="#[flowVars.isIntervalExpired]">
+            <when expression="#[flowVars.isIntervalExpired == true]">
                 <flow-ref name="sendNotificaiton" doc:name="sendNotificaiton"/>
             </when>
             <otherwise>
-                <logger message="Interval Has not Epired No notificaitons would be sent for #[payload]" level="INFO" doc:name="Logger"/>
-                <scripting:component doc:name="Update Payload to Previous Time Stamp">
-                    <scripting:script engine="Groovy"><![CDATA[try{
+                <choice doc:name="Previous Ping isUp?">
+                    <when expression="#[flowVars['previousPingResult'].get(payload.name).isUp == true]">
+                        <flow-ref name="sendNotificaiton" doc:name="sendNotificaiton"/>
+                    </when>
+                    <otherwise>
+                        <logger message="Interval Has not Epired No notificaitons would be sent for #[payload]" level="INFO" doc:name="Logger"/>
+                        <scripting:component doc:name="Update Payload to Previous Time Stamp">
+                            <scripting:script engine="Groovy"><![CDATA[try{
   def lastPingPayload = flowVars['previousPingResult'].get(payload.name)
   payload.put("notification_timeStamp", lastPingPayload.notification_timeStamp)
 }catch(Exception ex){
    ex.printStackTrace()
 }
 return payload]]></scripting:script>
-                </scripting:component>
+                        </scripting:component>
+                    </otherwise>
+                </choice>
             </otherwise>
+
         </choice>
     </sub-flow>
 
